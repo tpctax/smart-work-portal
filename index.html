@@ -161,7 +161,7 @@ button,input,textarea,select{font-family:inherit}
 
 <div class="modal" id="dataModal">
   <div class="modal-card">
-    <div class="modal-head"><div><small>DATA & GUIDE</small><h3 id="dataModalTitle"></h3></div><button class="close" data-close>×</button></div>
+    <div class="modal-head"><div><small>SMART TAX SEARCH</small><h3 id="dataModalTitle"></h3></div><button class="close" data-close>×</button></div>
     <div class="choices" id="dataChoices"></div>
   </div>
 </div>
@@ -260,16 +260,16 @@ button,input,textarea,select{font-family:inherit}
 
       <section class="admin-section full">
         <h3>首頁卡片管理</h3>
-        <div class="admin-note-help">可新增卡片。類型可選「一般連結」、「查資料」或「趣學習」。</div>
+        <div class="admin-note-help">可新增卡片。類型可選「一般連結」、「智稅搜」或「趣學習」。</div>
         <div class="admin-list" id="adminCardsList"></div>
         <button class="add-btn" id="addCardBtn" type="button">＋ 新增首頁卡片</button>
       </section>
 
       <section class="admin-section full">
-        <h3>查資料｜子項目管理</h3>
+        <h3>智稅搜｜子項目管理</h3>
         <div class="admin-field"><label>彈窗標題</label><input id="setDataModalTitle"></div>
         <div class="admin-list" id="adminDataItemsList"></div>
-        <button class="add-btn" id="addDataItemBtn" type="button">＋ 新增查資料項目</button>
+        <button class="add-btn" id="addDataItemBtn" type="button">＋ 新增智稅搜項目</button>
       </section>
 
       <section class="admin-section full">
@@ -312,13 +312,13 @@ let adminSessionPassword='';
 const DEFAULTS={
   badgeText:'單一入口整合版',
   title:'智慧工作入口',
-  tag1:'查資料・找工具・填回報・趣學習',
+  tag1:'智稅搜・找工具・填回報・趣學習',
   tag2:'一站快速到位！',
   sameTabNote:'各頁面皆可直接使用「返回智慧工作入口」按鈕返回首頁。',
   footerNote:'用心服務　讓工作更輕鬆',
 
   news:{enabled:true,label:'🔔 最新消息',mode:'popup',title:'最新消息',content:'此區可放置入口網站更新資訊、系統公告或重要提醒。',url:''},
-  help:{enabled:true,label:'📘 使用說明',title:'使用說明',content:'查資料：快速查詢業務資訊與操作指引。\\n找工具：整合常用網站與工作工具。\\n填回報：線上填報臨時業務與回報事項。\\n趣學習：透過互動方式學習業務知識。'},
+  help:{enabled:true,label:'📘 使用說明',title:'使用說明',content:'智稅搜：快速查詢業務資訊與操作指引。\\n找工具：整合常用網站與工作工具。\\n填回報：線上填報臨時業務與回報事項。\\n趣學習：透過互動方式學習業務知識。'},
   contact:{enabled:true,label:'👤 聯絡窗口',url:'https://tpctax.gov.taipei/News.aspx?n=CC2C23F341C059D5&sms=2D3666ECD0032A15'},
 
   mascot:{enabled:true,image:'tax-helper.png',size:205,x:0,y:0},
@@ -326,14 +326,14 @@ const DEFAULTS={
   rightNote:{enabled:true,text:'同心稅務\\n更好的服務\\n從這裡開始！',size:18,x:0,y:0},
 
   cards:[
-    {id:'data',title:'查資料',desc:'快速查詢業務資訊\\n與操作指引',icon:'🔎',theme:'blue',type:'data',url:'',enabled:true},
+    {id:'data',title:'智稅搜',desc:'快速查詢業務資訊\\n與操作指引',icon:'🔎',theme:'blue',type:'data',url:'',enabled:true},
     {id:'tools',title:'找工具',desc:'整合常用網站\\n與工作工具',icon:'🧰',theme:'orange',type:'link',url:'tools.html',enabled:true},
     {id:'report',title:'填回報',desc:'線上填報臨時業務\\n與回報事項',icon:'📝',theme:'green',type:'link',url:'business-report.html',enabled:true},
     {id:'learning',title:'趣學習',desc:'用互動方式\\n輕鬆學習業務知識',icon:'🎵',theme:'purple',type:'learning',url:'',enabled:true},
     {id:'error',title:'報異常',desc:'系統問題\\n即時回報與追蹤',icon:'⚠️',theme:'red',type:'link',url:'system-report/index.html',enabled:false}
   ],
 
-  dataModalTitle:'查資料',
+  dataModalTitle:'智稅搜',
   dataItems:[
     {id:'tax-helper',icon:'⌕',title:'TAX 小幫手',desc:'查詢電話答詢題庫與業務資訊',url:'tax-helper/index.html',enabled:true},
     {id:'video-guide',icon:'▣',title:'視訊服務雲操作',desc:'互動式視訊服務操作教學',url:'video-guide.html',enabled:true}
@@ -429,6 +429,11 @@ function mergeDefaults(saved){
   for(const k of ['cards','dataItems','announcements']) if(Array.isArray(saved[k]))s[k]=saved[k];
   if(Array.isArray(saved.learningItems)) s.learningItems=saved.learningItems.map(normalizeLearningItem);
   else s.learningItems=(s.learningItems||[]).map(normalizeLearningItem);
+  // 相容舊版共用設定：僅將原「查資料」的顯示名稱更新為「智稅搜」，保留其他自訂內容。
+  if(s.dataModalTitle==='查資料')s.dataModalTitle='智稅搜';
+  if(typeof s.tag1==='string')s.tag1=s.tag1.replace(/查資料/g,'智稅搜');
+  if(typeof s.help?.content==='string')s.help.content=s.help.content.replace(/查資料/g,'智稅搜');
+  if(Array.isArray(s.cards))s.cards.forEach(c=>{if(c.id==='data'&&c.title==='查資料')c.title='智稅搜'});
   return s;
 }
 function getSettings(){
@@ -648,7 +653,7 @@ function renderAdminCards(){
         <label>圖示<input data-card-field="icon" data-i="${i}" value="${esc(c.icon)}"></label>
         <label>名稱<input data-card-field="title" data-i="${i}" value="${esc(c.title)}"></label>
         <label>顏色<select data-card-field="theme" data-i="${i}">${['blue','orange','red','green','purple','teal','pink'].map(x=>`<option value="${x}" ${c.theme===x?'selected':''}>${x}</option>`).join('')}</select></label>
-        <label>類型<select data-card-field="type" data-i="${i}"><option value="link" ${c.type==='link'?'selected':''}>一般連結</option><option value="data" ${c.type==='data'?'selected':''}>查資料</option><option value="learning" ${c.type==='learning'?'selected':''}>趣學習</option></select></label>
+        <label>類型<select data-card-field="type" data-i="${i}"><option value="link" ${c.type==='link'?'selected':''}>一般連結</option><option value="data" ${c.type==='data'?'selected':''}>智稅搜</option><option value="learning" ${c.type==='learning'?'selected':''}>趣學習</option></select></label>
         <label class="wide">說明<textarea data-card-field="desc" data-i="${i}">${esc(c.desc)}</textarea></label>
         <label class="wide">連結（一般連結使用）<input data-card-field="url" data-i="${i}" value="${esc(c.url)}"></label>
         <label class="enabled-line wide"><input type="checkbox" data-card-field="enabled" data-i="${i}" ${c.enabled!==false?'checked':''}> 顯示此卡片</label>
@@ -724,7 +729,7 @@ function renderSimpleList(type){
   root.querySelectorAll('[data-field]').forEach(el=>wireField(el,arr));
   wireActions(root,arr,rerender)
 }
-addDataItemBtn.onclick=()=>{work.dataItems.push({id:newid('data'),icon:'🔗',title:'新查資料項目',desc:'',url:'',enabled:true});renderSimpleList('data')};
+addDataItemBtn.onclick=()=>{work.dataItems.push({id:newid('data'),icon:'🔗',title:'新智稅搜項目',desc:'',url:'',enabled:true});renderSimpleList('data')};
 addLearningItemBtn.onclick=()=>{work.learningItems.push(normalizeLearningItem({id:newid('learn'),category:'staff',contentType:'image',icon:'✨',title:'新學習內容',desc:'',provider:'',coverUrl:'',url:'',enabled:true}));renderSimpleList('learning')};
 addAnnouncementBtn.onclick=()=>{work.announcements.push({id:newid('ann'),date:'',text:'新公告',url:'',enabled:true});renderSimpleList('announcements')};
 
@@ -737,7 +742,7 @@ function collectAdmin(){
   work.mascot={enabled:setMascotEnabled.checked,image:pendingMascot||work.mascot.image||'tax-helper.png',size:Number(setMascotSize.value)||205,x:Number(setMascotX.value)||0,y:Number(setMascotY.value)||0};
   work.leftNote={enabled:setLeftNoteEnabled.checked,text:setLeftNoteText.value,size:Number(setLeftNoteSize.value)||18,x:Number(setLeftNoteX.value)||0,y:Number(setLeftNoteY.value)||0};
   work.rightNote={enabled:setRightNoteEnabled.checked,text:setRightNoteText.value,size:Number(setRightNoteSize.value)||18,x:Number(setRightNoteX.value)||0,y:Number(setRightNoteY.value)||0};
-  work.dataModalTitle=setDataModalTitle.value.trim()||'查資料';
+  work.dataModalTitle=setDataModalTitle.value.trim()||'智稅搜';
   work.backButton={enabled:setBackEnabled.checked,text:setBackText.value.trim()||'返回智慧工作入口',position:setBackPosition.value,scale:Number(setBackScale.value)||100,x:Number(setBackX.value)||0,y:Number(setBackY.value)||0};
 }
 adminSaveBtn.onclick=async()=>{
