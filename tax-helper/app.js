@@ -200,7 +200,7 @@ function renderBank(){const q=$('#bankFilter').value.trim();const cat=$('#catego
 function getFavs(){try{return JSON.parse(localStorage.getItem('taxAIFavorites')||'[]')}catch{return[]}}function isFav(id){return getFavs().some(x=>sameId(x,id))}
 function toggleFav(id){let a=getFavs();const exists=a.some(x=>sameId(x,id));a=exists?a.filter(x=>!sameId(x,id)):[...a,id];localStorage.setItem('taxAIFavorites',JSON.stringify(a));toast(!exists?'已加入收藏':'已取消收藏')}
 function renderFavorites(){const ids=getFavs();const data=bank.filter(x=>ids.some(id=>sameId(id,x.id)));$('#favoriteList').innerHTML=data.length?data.map(item=>`<article class="result-card" data-id="${item.id}"><div class="result-top"><span class="cat-tag">${item.category}</span><span class="score">收藏題目</span></div><h3>${escapeHtml(item.question)}</h3><p>${escapeHtml(item.summary)}</p><div class="result-actions"><button class="small-btn" data-open="${item.id}">查看完整答詢</button><button class="small-btn" data-fav="${item.id}">★ 取消收藏</button></div></article>`).join(''):'<div class="empty">目前還沒有收藏題目。搜尋後點選「收藏」，就會出現在這裡。</div>';bindCards('#favoriteList')}
-function openDetail(id){const x=bank.find(i=>sameId(i.id,id));if(!x)return;const related=(x.relatedIds||[]).map(r=>bank.find(i=>sameId(i.id,r))).filter(Boolean);$('#drawerContent').innerHTML=`<div class="detail-head"><span class="cat-tag">${x.category}</span><h2>${escapeHtml(x.question)}</h2><div class="detail-actions"><button class="primary-btn" data-copy>複製完整答詢</button><button class="small-btn" data-dfav>${isFav(id)?'★ 已收藏':'☆ 加入收藏'}</button></div></div><section class="detail-card ai"><h4>✨ 整理重點</h4><p>${escapeHtml(x.summary)}</p></section><section class="detail-card"><h4>標準答詢</h4><p>${escapeHtml(x.answer)}</p></section><section class="detail-card"><h4>相關問題推薦</h4><div class="related-list">${related.map(r=>`<button class="related-btn" data-related="${r.id}">${escapeHtml(r.question)}</button>`).join('')}</div></section><p style="color:#81909d;font-size:12px">題庫版本：${x.version}｜實際答詢仍應以最新法令、函釋及核定資料為準。</p>`;$('.drawer').classList.add('open');$('.drawer').setAttribute('aria-hidden','false');$('[data-copy]').onclick=()=>copyItem(x);$('[data-dfav]').onclick=()=>{toggleFav(id);openDetail(id)};$$('[data-related]').forEach(b=>b.onclick=()=>openDetail(b.dataset.related))}
+function openDetail(id){const x=bank.find(i=>sameId(i.id,id));if(!x)return;const related=(x.relatedIds||[]).map(r=>bank.find(i=>sameId(i.id,r))).filter(Boolean);$('#drawerContent').innerHTML=`<div class="detail-head"><span class="cat-tag">${x.category}</span><h2>${escapeHtml(x.question)}</h2><div class="detail-actions"><button class="primary-btn" data-copy>複製完整答詢</button><button class="small-btn" data-dfav>${isFav(id)?'★ 已收藏':'☆ 加入收藏'}</button></div></div><section class="detail-card ai"><h4>✨ 整理重點</h4><p>${escapeHtml(x.summary)}</p></section><section class="detail-card"><h4>標準答詢</h4><p>${linkifyAnswer(x.answer)}</p></section><section class="detail-card"><h4>相關問題推薦</h4><div class="related-list">${related.map(r=>`<button class="related-btn" data-related="${r.id}">${escapeHtml(r.question)}</button>`).join('')}</div></section><p style="color:#81909d;font-size:12px">題庫版本：${x.version}｜實際答詢仍應以最新法令、函釋及核定資料為準。</p>`;$('.drawer').classList.add('open');$('.drawer').setAttribute('aria-hidden','false');$('[data-copy]').onclick=()=>copyItem(x);$('[data-dfav]').onclick=()=>{toggleFav(id);openDetail(id)};$$('[data-related]').forEach(b=>b.onclick=()=>openDetail(b.dataset.related))}
 function closeDrawer(){$('.drawer').classList.remove('open');$('.drawer').setAttribute('aria-hidden','true')}
 async function copyItem(x){const t=`【${x.category}】
 ${x.question}
@@ -213,6 +213,33 @@ ${x.answer}
 `;try{await navigator.clipboard.writeText(t)}catch{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}toast('已複製完整答詢')}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),1600)}
 function escapeHtml(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+// 將答案中的 http(s) 網址轉為超連結，遇到中文及全形標點即停止。
+// 保留網址內的 ?、&、=、% 等查詢參數，並防止答詢文字被當作 HTML 執行。
+function linkifyAnswer(value){
+  const source=String(value??'');
+  // 中文、日文、全形括號/標點不屬於此題庫的網址，不能包含在連結內。
+  const urlPattern=/https?:\/\/[^\s<>"'`\u3000-\u303f\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]+/gi;
+  let result='';
+  let from=0;
+  for(const match of source.matchAll(urlPattern)){
+    const start=match.index;
+    const candidate=match[0];
+    // 移除網址尾端的文章標點，但不影響網址內部的查詢參數。
+    let url=candidate.replace(/[.,;:!?\]}>]+$/g,'');
+    // 尾端若有多餘的英文右括號，也還給一般文字（保留成對的網址括號）。
+    while(url.endsWith(')') && (url.match(/\(/g)||[]).length < (url.match(/\)/g)||[]).length){
+      url=url.slice(0,-1);
+    }
+    result+=escapeHtml(source.slice(from,start));
+    if(url){
+      result+=`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="answer-url">${escapeHtml(url)}</a>`;
+    }
+    result+=escapeHtml(candidate.slice(url.length));
+    from=start+candidate.length;
+  }
+  return result+escapeHtml(source.slice(from));
+}
 
 function bindExcelImport(){
   const btn=$('#importExcelBtn');
